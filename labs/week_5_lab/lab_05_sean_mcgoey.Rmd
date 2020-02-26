@@ -74,7 +74,7 @@ We're loading three packages today: the Tidyverse, Janitor and a new one, [Lubri
 
 ```{r}
 
-install.packages('lubridate')
+#install.packages('lubridate')
 
 library(tidyverse)
 library(janitor)
@@ -304,7 +304,7 @@ We've answered our question.  Norton City, Virginia had the highest per person r
 
 Not too hard, right?  This example was pretty straightforward.   
 
-Joins are powerful, but they're a minefield of potential problems. If you're not aware of how joins can go wrong, you can reach inaccurate conclusions. So, let's dig in a bit on how joins work.  
+Joins are powerful, but they're a minefield of potential problems. If you're not aware of how joins can go wrong, you can reach inaccurate conclusions. So, let's dig in a bit on how joins work.
 
 ## Different types of joins
 
