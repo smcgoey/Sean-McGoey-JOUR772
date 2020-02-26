@@ -74,6 +74,12 @@ We're loading three packages today: the Tidyverse, Janitor and a new one, [Lubri
 
 ```{r}
 
+install.packages('lubridate')
+
+library(tidyverse)
+library(janitor)
+library(lubridate)
+
 ```
 
 ## Load Data
@@ -94,7 +100,20 @@ mingo <- read_tsv("data/arcos-wv-mingo-54059-itemized.tsv")
 
 ## Examine the Data
 
-**Task**: Use glimpse() and View() to get a sense of the data.     
+**Task**: Use glimpse() and View() to get a sense of the data.   
+
+```{r}
+
+# View mingo in new tab - COMMENTING OUT ONCE COMPLETE
+#View(mingo)
+
+# Glimpse the data in mingo
+glimpse(mingo)
+
+# Summary of data in mingo
+summary(mingo)
+
+```
 
 ## Cleaning
 
@@ -147,6 +166,8 @@ We can filter. This filters just for shipments on Halloween in 2006.
 mingo %>%
   filter(transaction_date == as_date("2006-10-31"))
 
+# Question for Sean: Why is as_date required? Would sorting, filtering, etc. still work when treating the date as a string of characters?
+
 ```
 
 We can also use lubridate functions to extract additional information from a valid date column. 
@@ -171,6 +192,12 @@ mingo %>%
 **Task**: Create a codeblock below and create a table that answers the following question: how many total pills were shipped to Mingo County each year between 2006 and 2012? In a comment, explain what the overall trend was during that period. 
 
 ```{r}
+
+mingo %>%
+  group_by(transaction_year) %>%
+  summarise(total_pills = sum(dosage_unit))
+
+# As with total shipments, the number of pills shipped to Mingo County spiked in 2007-09 - peaking in 2008 with 7,496 shipments totaling 9,795,100 pills - before decreasing in the 2010s.
 
 ```
 
