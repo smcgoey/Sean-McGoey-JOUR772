@@ -81,7 +81,17 @@ We're also going to load two new packages: [mapview](https://r-spatial.github.io
 ```{r}
 
 # Load Tidyverse, janitor and arcos, tidycensus, mapview, ggthemes, scales
-
+#install.packages('tidycensus')
+#install.packages('mapview')
+#install.packages('ggthemes')
+#install.packages('nat', dependencies = TRUE)
+library(tidyverse)
+library(janitor)
+library(arcos)
+library(scales)
+library(tidycensus)
+library(mapview)
+library(ggthemes)
 
 ```
 
@@ -100,8 +110,10 @@ Remember, we need to store a password of sorts -- called an API key -- that will
 Let's store the key first.
 
 ```{r}
+
 # store one of our API keys as an object called key
 key <- "uO4EK6I"
+
 ```
 
 ## Load ARCOS data
@@ -120,26 +132,32 @@ arcos_county_pills_per_year <- summarized_county_annual(key = key) %>%
 The ARCOS API also has a table with county population estimates for each year between 2006 and 2012.  Let's pull that down and clean and standardize the names. Remember to include the key.
 
 ```{r}
+
 arcos_county_population_per_year <- county_population(key = key) %>%
   clean_names()
+
 ```
 
 As we saw in previous labs, there's an inconsistent number of records between the two tables.  This is because there are some counties in the population table that aren't in the pills table, and vice versa.  We can see what these are using the anti_join() function from the Tidyverse. Note: we need to join by the countyfips code and year.  
 
 ```{r}
-# 999 records in our population table without a countyfips+year match in our pills table
+
+# 999 records in our population table without a countyfips+year match in our pills table (I get 1,285 -SNM)
 not_in_pills <- arcos_county_population_per_year %>%
   anti_join(arcos_county_pills_per_year, by=c("countyfips","year"))
 
-# 595 records in our pills table without a countyfips+year match in population table.  
+# 595 records in our pills table without a countyfips+year match in population table. (I get 778 -SNM)  
 not_in_population <- arcos_county_pills_per_year %>%
   anti_join(arcos_county_population_per_year, by=c("countyfips","year"))
+
 ```
 
 **Task**: Examine the not_in_population table.  Write a few sentences explaining patterns you see in which records show up in the pills table, but not in population table.  How could this cause problems for you in the future?
 
 ```{r}
-# Comment
+
+# The thing that jumps out to me is how many of the records in not_in_population have missing countyfips values. That could cause a problem when trying to join these tables because without the unique identifier, you could wind up running into join issues because of things like multiple states with the same county name. There are also records without county names, which means we're not getting a 100% full picture of the states we're looking at. Additionally, there are many records from U.S. territories and military installations - not necessarily a problem in itself, but something worth noting.
+
 ```
 
 Okay, let's put them together. Remember we need to join them on both countyfips and year.  We're also going to throw in buyer_county and buyer_state, which exist in both tables, so we don't get the buyer_county.x and buyer_county.y weirdness.
@@ -147,8 +165,10 @@ Okay, let's put them together. Remember we need to join them on both countyfips 
 We're going to inner join here with population on the left side, because we want a consistent set of U.S. counties for when we do mapping later. And we're going to make a judgment call that it's okay to exclude pill shipments for which there were no assigned counties, which is what we're doing when we do the left join.
 
 ```{r}
+
 pills_population <- arcos_county_population_per_year %>%
   left_join(arcos_county_pills_per_year, by = c("countyfips", "year", "buyer_county","buyer_state"))
+
 ```
 
 Now we're going to clean up our data set a bit by first creating a new column with the state code, by taking the first two digits from our countyfips column, using str_sub() from the stringr package. We'll need this to map states later on.
@@ -172,6 +192,7 @@ There are lots of places to get shapefiles for all sorts of geographies.  The U.
 First, we need to store our API Key. You can use mine for now, but best to [get your own](https://api.census.gov/data/key_signup.html).
 
 ```{r}
+
 # Define API Key
 census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
 
@@ -187,6 +208,8 @@ We're going to pull in four sets of data here.
 First, lets pull in county and state.  The "variable" here is just a count of total population, but it doesn't really matter.  We just want the geometry, which we get by selecting geometry=TRUE.  
 
 ```{r}
+
+options(tigris_use_cache = TRUE)
 
 county_geodata <- get_acs(geography = "county",
               variables = "B01001_001", geometry = TRUE)
@@ -228,36 +251,42 @@ Let's make a simple map just from our population shapefiles to see how ggplot2 t
 Three lines of code is all we need.  First, the dataframe we're doing this to, which contains our spatial information.  Then we tell it to make a ggplot graphic, using our population information (the variable is called "estimate" in our table) to fill in the shapes with a color gradient.  Then geom_sf() says "take the information in the geometry column" and draw a map!
 
 ```{r}
+
+# Turn off scientific notation if your legend looks weird
+options(scipen=999)
+
 state_geodata_shifted %>%
   ggplot(aes(fill = estimate)) +
   geom_sf()
-
-# Turn off scientific notation if your legend looks weird
-#options(scipen=999)
 
 ```
 
 Nice! Okay, just like with ggplot2 in the last lab, we can keep adding stuff to our function to fix the styling. I don't know about you, but those geographic coordinates are useless information, so we can get rid of those.  Fortunately, the theme_map() function that's part of ggthemes package will take care of it.  
 
 ```{r}
+
 state_geodata_shifted %>%
   ggplot(aes(fill = estimate)) +
   geom_sf() +
   theme_map()
+
 ```
 
 I don't love those state line borders.  Let's set the width (lwd) to 0.
 
 ```{r}
+
 state_geodata_shifted %>%
   ggplot(aes(fill = estimate)) +
   geom_sf(lwd = 0) +
   theme_map()
+
 ```
 
 Now, let's clean up the legend title, put commas in the legend labels, and move the legend to the right.
 
 ```{r}
+
 state_geodata_shifted %>%
   ggplot(aes(fill = estimate)) +
   geom_sf(lwd = 0) +
@@ -271,6 +300,7 @@ state_geodata_shifted %>%
 Let's give it a title, subtitle and source.
 
 ```{r}
+
 state_geodata_shifted %>%
   ggplot(aes(fill = estimate)) +
   geom_sf(lwd = 0) +
@@ -278,11 +308,13 @@ state_geodata_shifted %>%
   labs(fill='Population',title="California, Texas have largest populations", subtitle = "2017 population, U.S. Census", caption = "Source: U.S. Census ACS") +
   scale_fill_continuous(labels = comma) +
   theme(legend.position="right")
+
 ```
 
 And lastly, let's give it a cooler color scheme, [viridis](https://ggplot2.tidyverse.org/reference/scale_viridis.html).  
 
 ```{r}
+
 state_geodata_shifted %>%
   ggplot(aes(fill = estimate)) +
   geom_sf(lwd = 0) +
@@ -305,6 +337,7 @@ After we've loaded the mapview package, the function we use is called "mapview".
 ```{r}
 
 mapview(state_geodata_shifted, zcol = "estimate", legend = TRUE)
+#Error in dyn.load(file, DLLpath = DLLpath, ...) : unable to load shared object '/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so': dlopen(/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so, 6): Library not loaded: /opt/X11/lib/libfreetype.6.dylib Referenced from: /Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so Reason: image not found
 
 ```
 
@@ -341,15 +374,21 @@ Okay, first, let's build an interactive version of the map.
 **Task**: Using the mapview() function we used above, show an interactive map that shades each state according to the pills per person rate in 2009.
 
 ```{r}
+
 # interactive map code here
+mapview(geo_pills_population_state_2009, zcol = "estimate", legend = TRUE)
+# Error in dyn.load(file, DLLpath = DLLpath, ...) : unable to load shared object '/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so': dlopen(/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so, 6): Library not loaded: /opt/X11/lib/libfreetype.6.dylib Referenced from: /Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so Reason: image not found
+
 ```
 
 Now let's plot a basic version.
 
 ```{r}
+
 geo_pills_population_state_2009 %>%
   ggplot(aes(fill = pills_per_person)) +
   geom_sf()
+
 ```
 
 **Task**: stylize the map, making it look like the final population map we created in the first part of the exercise with two changes: *center the legend on the bottom of the graphic*, instead of at right. You might try searching for legend.position on Google. And write up a headline, subtitle and source appropriate for the chart.  
@@ -357,6 +396,14 @@ geo_pills_population_state_2009 %>%
 ```{r}
 
 # Map code here
+geo_pills_population_state_2009 %>%
+  ggplot(aes(fill = pills_per_person)) +
+  geom_sf(lwd = 0) +
+  theme_map() +
+  labs(fill='Population',title="West Virginia, Kentucky received the most opioid pills per person in 2009", subtitle = "2017 population, U.S. Census", caption = "Source: U.S. Census ACS and DEA ARCOS database via The Washington Post") +
+  scale_fill_continuous(labels = comma) +
+  theme(legend.position="bottom") +
+  scale_fill_viridis_c(option = "plasma",labels = comma)
 
 ```
 
@@ -369,6 +416,7 @@ First, we'll group by statefips, buyer state and year.  Then, we'll calculate to
 That will give us one pills_per_person rate per state per year.
 
 ```{r}
+
 pills_population_state <- pills_population %>%
   group_by(statefips, buyer_state, year) %>%
   summarise(total_pills=sum(dosage_unit, na.rm = TRUE),
@@ -413,7 +461,7 @@ geo_pills_population_state %>%
   facet_wrap(~year, nrow=2) +
   geom_sf(lwd = 0) +
   theme_map() +
-  labs(fill='Pills per Person',title="", subtitle = "", caption = "Source: ARCOS database") +
+  labs(fill='Pills per Person',title="Opioid shipments across the country peak in 2011 and 2012 before declining", subtitle = "Pills per person, 2006-2014", caption = "Source: ARCOS database") +
   theme(legend.position="bottom") +
   scale_fill_viridis_c(option = "magma",labels = comma)
 
