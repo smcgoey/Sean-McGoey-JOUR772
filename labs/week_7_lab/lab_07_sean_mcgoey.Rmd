@@ -337,9 +337,10 @@ After we've loaded the mapview package, the function we use is called "mapview".
 ```{r}
 
 mapview(state_geodata_shifted, zcol = "estimate", legend = TRUE)
+
 # GETTING ERROR MESSAGE ON LAPTOP: Error in dyn.load(file, DLLpath = DLLpath, ...) : unable to load shared object '/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so': dlopen(/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so, 6): Library not loaded: /opt/X11/lib/libfreetype.6.dylib Referenced from: /Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so Reason: image not found
 
-# NOTE: Error seems to be resolved when running through rstudio.cloud. Still troubleshooting why I'm getting the error on my machine. -SNM
+# NOTE: Error seems to be resolved when running through rstudio.cloud. Still troubleshooting why I'm getting the error on my local machine. -SNM
 
 ```
 
@@ -379,9 +380,10 @@ Okay, first, let's build an interactive version of the map.
 
 # interactive map code here
 mapview(geo_pills_population_state_2009, zcol = "pills_per_person", legend = TRUE)
+
 # Error in dyn.load(file, DLLpath = DLLpath, ...) : unable to load shared object '/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so': dlopen(/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so, 6): Library not loaded: /opt/X11/lib/libfreetype.6.dylib Referenced from: /Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so Reason: image not found
 
-# Same as previous instance, error is resolved when running in rstudio.cloud. -SNM
+# Same as previous instance, error on local machine is resolved when running in rstudio.cloud. -SNM
 
 ```
 
@@ -475,7 +477,22 @@ geo_pills_population_state %>%
 
 ```{r}
 
+# Build pills_population_county_2009 object
+pills_population_county_2009 <- pills_population %>%
+  filter(year==2009) %>%
+  group_by(countyfips, buyer_county, buyer_state) %>%
+  summarise(total_pills=sum(dosage_unit, na.rm = TRUE),
+            total_population=sum(population, na.rm=TRUE)) %>%
+  mutate(pills_per_person=total_pills/total_population)
+
+# Join to shapefile
+geo_pills_population_county_2009 <- county_geodata %>%
+ inner_join(pills_population_county_2009, by=c("GEOID" = "countyfips"))
+
 # Map Code Here
+mapview(geo_pills_population_county_2009, zcol = "pills_per_person", legend = TRUE)
+
+# One thing that jumps out to me is that in addition to Appalachia, there are big clusters in Oklahoma/Arkansas and along the west coast (northern California up into Oregon). Upon closer inspection, major cities (New York, Los Angeles, Atlanta, Baltimore, Dallas, etc.) tend to have fewer pills per person than counties further out - they definitely have more people clustered together, which brings down pills per person, but there could be other factors. They might also face tougher DEA scrutiny, for example, or opioid use may just be generally lower in bigger cities.
 
 ```
 
@@ -483,7 +500,28 @@ geo_pills_population_state %>%
 
 
 ```{r}
+
+# Build Maryland county object
+pills_population_md_county <- pills_population %>%
+  filter(buyer_state == "MD") %>%
+  group_by(countyfips, buyer_county, year) %>%
+  summarise(total_pills=sum(dosage_unit, na.rm = TRUE),
+            total_population=sum(population, na.rm=TRUE)) %>%
+  mutate(pills_per_person=total_pills/total_population)
+
+# Join to shapefile
+geo_pills_md_county <- county_geodata %>%
+ inner_join(pills_population_md_county, by=c("GEOID" = "countyfips"))
+
 # map code here
+geo_pills_md_county %>%
+  ggplot(aes(fill = pills_per_person)) +
+  facet_wrap(~year, nrow=2) +
+  geom_sf(lwd = 0) +
+  theme_map() +
+  labs(fill='Pills per Person',title="Rural counties (Allegany, Cecil, Kent, Wicomico, Worcester) consistently \nreceive the most pills per person in Maryland", subtitle = "Pills per person by county, 2006-2014", caption = "Source: DEA ARCOS database") +
+  theme(legend.position="bottom") +
+  scale_fill_viridis_c(option = "viridis",labels = comma)
 
 ```
 
