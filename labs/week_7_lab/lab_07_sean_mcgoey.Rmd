@@ -337,7 +337,9 @@ After we've loaded the mapview package, the function we use is called "mapview".
 ```{r}
 
 mapview(state_geodata_shifted, zcol = "estimate", legend = TRUE)
-#Error in dyn.load(file, DLLpath = DLLpath, ...) : unable to load shared object '/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so': dlopen(/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so, 6): Library not loaded: /opt/X11/lib/libfreetype.6.dylib Referenced from: /Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so Reason: image not found
+# GETTING ERROR MESSAGE ON LAPTOP: Error in dyn.load(file, DLLpath = DLLpath, ...) : unable to load shared object '/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so': dlopen(/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so, 6): Library not loaded: /opt/X11/lib/libfreetype.6.dylib Referenced from: /Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so Reason: image not found
+
+# NOTE: Error seems to be resolved when running through rstudio.cloud. Still troubleshooting why I'm getting the error on my machine. -SNM
 
 ```
 
@@ -376,8 +378,10 @@ Okay, first, let's build an interactive version of the map.
 ```{r}
 
 # interactive map code here
-mapview(geo_pills_population_state_2009, zcol = "estimate", legend = TRUE)
+mapview(geo_pills_population_state_2009, zcol = "pills_per_person", legend = TRUE)
 # Error in dyn.load(file, DLLpath = DLLpath, ...) : unable to load shared object '/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so': dlopen(/Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so, 6): Library not loaded: /opt/X11/lib/libfreetype.6.dylib Referenced from: /Library/Frameworks/R.framework/Versions/3.6/Resources/library/systemfonts/libs/systemfonts.so Reason: image not found
+
+# Same as previous instance, error is resolved when running in rstudio.cloud. -SNM
 
 ```
 
