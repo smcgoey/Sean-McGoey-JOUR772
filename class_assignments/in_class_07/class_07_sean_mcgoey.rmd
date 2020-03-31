@@ -61,6 +61,13 @@ We're also going to load a new package, [tidycensus](https://walkerke.github.io/
 **Task**: In the code block below, load the six packages we'll need for today. Install packages if necessary.
 ```{r}
 
+library(tidyverse)
+library(janitor)
+library(arcos)
+library(tidycensus)
+library(ggplot2)
+library(ggthemes)
+
 ```
 
 ## Set ARCOS R Package API Key
@@ -91,11 +98,13 @@ We'll need two tables.
 The first: a table with the total number of pills sent to each U.S. county in each year from 2006 to 2014 . We'll use the summarized_county_annual() function from the ARCOS API package.
 
 ```{r}
+
 arcos_county_pills_per_year <- summarized_county_annual(key = key) %>%
   as_data_frame() %>%
   clean_names()
 
 glimpse(arcos_county_pills_per_year)
+
 ```
 
 The second: a table with the population of each U.S. county in each year from 2006 to 2014.
@@ -103,6 +112,9 @@ The second: a table with the population of each U.S. county in each year from 20
 **Task**: Using the county_population() function that is part of the ARCOS API, pull in a table with county population for each year from 2006 to 2014 and store it as arcos_county_population_per_year. Be sure to clean up the column names, using the clean_names() function.
 
 ```{r}
+
+arcos_county_population_per_year <- county_population(key = key) %>%
+  clean_names()
 
 ```
 
@@ -123,14 +135,41 @@ Then provide a short writeup on what you find. What trends do you see?
 census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
 
 # Step 2: Get county level shapefiles from the census
+options(tigris_use_cache = TRUE)
+
+county_geodata <- get_acs(geography = "county",
+              variables = "B01001_001", geometry = TRUE)
+
+county_geodata_shifted <- get_acs(geography = "county",
+              variables = "B01001_001", geometry = TRUE, shift_geo = TRUE)
 
 # Step 3: Join together table with pills by county by year with table with population by county by year
+pills_population <- arcos_county_population_per_year %>%
+  left_join(arcos_county_pills_per_year, by = c("countyfips", "year", "buyer_county","buyer_state"))
 
 # Step 4: Filter the pills population table just for West Virginia and create the pills per person metric.  
+pills_population_wv_county <- pills_population %>%
+  filter(buyer_state == "WV") %>%
+  group_by(countyfips, buyer_county, year) %>%
+  summarise(total_pills=sum(dosage_unit, na.rm = TRUE),
+            total_population=sum(population, na.rm=TRUE)) %>%
+  mutate(pills_per_person=total_pills/total_population)
 
 # Step 5: Join your pills per person table to a county level shapefile
+geo_pills_wv_county <- county_geodata %>%
+ inner_join(pills_population_wv_county, by=c("GEOID" = "countyfips"))
 
 # Step 6: Draw the facet map
+geo_pills_wv_county %>%
+  ggplot(aes(fill = pills_per_person)) +
+  facet_wrap(~year, nrow=2) +
+  geom_sf(lwd = 0) +
+  theme_map() +
+  labs(fill='Pills per Person',title="Even as shipments decline statewide, Mingo and Logan counties consistently receive the most pills", subtitle = "Pills per person by county, 2006-2014", caption = "Source: DEA ARCOS database") +
+  theme(legend.position="bottom") +
+  scale_fill_viridis_c(option = "viridis")
+
+# Obviously the outliers (Mingo/Logan/Boone counties) pop out here, with clearly the most pills per person in every year. But one other thing that I find interesting is that there are a few counties in the northern part of the state that may have increased their pills per person in the later years, even as the statewide amounts decreased.
 
 ```
 
@@ -139,6 +178,31 @@ census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
 It should look like this: https://github.com/smussenden/spring20-data-journalism/blob/master/in_class_assignments/class_07/images/task2.png
 
 ```{r}
+
+# Step 1: Filter the pills population table for West Virginia and Kentucky and create the pills per person metric.  
+pills_population_wv_ky_county <- pills_population %>%
+  filter(buyer_state %in% c("WV", "KY")) %>%
+  filter(year < 2010) %>%
+  group_by(countyfips, buyer_county, year) %>%
+  summarise(total_pills=sum(dosage_unit, na.rm = TRUE),
+            total_population=sum(population, na.rm=TRUE)) %>%
+  mutate(pills_per_person=total_pills/total_population)
+
+# Step 2: Join your pills per person table to a county level shapefile
+geo_pills_wv_ky_county <- county_geodata %>%
+ inner_join(pills_population_wv_ky_county, by=c("GEOID" = "countyfips"))
+
+# Step 3: Draw the facet map
+geo_pills_wv_ky_county %>%
+  ggplot(aes(fill = pills_per_person)) +
+  facet_wrap(~year, nrow=2) +
+  geom_sf(lwd = 0) +
+  theme_map() +
+  labs(fill='Pills per Person',title="Border counties in southeastern Kentucky and southwestern West Virginia receive the most pills", subtitle = "Pills per person by county in West Virginia and Kentucky, 2006-2009", caption = "Source: DEA ARCOS database") +
+  theme(legend.position="bottom") +
+  scale_fill_viridis_c(option = "plasma")
+
+# 2008 was obviously the peak year here, with the hottest hot spots near the KY/WV border. The fact that the hot spots also run along the border with Virginia is interesting as well - southwestern VA may merit some further looking into.
 
 ```
 
