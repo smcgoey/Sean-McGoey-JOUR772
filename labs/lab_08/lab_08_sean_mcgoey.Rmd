@@ -259,8 +259,10 @@ In our environment window, we see it comes in as a "nested list".  We can examin
 Now, let's strip out all the junk we don't want, and just keep the thing we want: the table with our info. We're going to modify the function we wrote above, and add a new function html_nodes('table') to just pull out the table. 
 
 ```{r}
+
 opioid_scrape <- read_html("https://www.drugabuse.gov/drugs-abuse/opioids/opioid-summaries-by-state") %>%
   html_nodes('table')
+
 ```
 
 We can examine the results in the environment window.  It kept the table head and table body, but it's kinda unreadable. Luckily, we can use the html_table() convenience function to clean it up. header=1 says to use the first row as a header. 
@@ -274,10 +276,12 @@ opioid_scrape <- read_html("https://www.drugabuse.gov/drugs-abuse/opioids/opioid
 We're getting closer.  But it's still a nested list, not super usable for our purposes. We can add an as.data.frame() function to make it a data frame. When you view it in the environment window, it looks like a dataframe now. 
 
 ```{r}
+
 opioid_scrape <- read_html("https://www.drugabuse.gov/drugs-abuse/opioids/opioid-summaries-by-state") %>%
   html_nodes('table') %>%
   html_table(header=1, fill=TRUE)  %>%
   as.data.frame()
+
 ```
 
 Okay, it's in now, but it's still kind of a mess. In next week's lab, which is dedicated to data cleaning, we'll work on cleaning this up a bit. 
@@ -286,6 +290,10 @@ Okay, it's in now, but it's still kind of a mess. In next week's lab, which is d
 
 ```{r}
 
+opioid_states_scrape <- read_html("https://www.cdc.gov/drugoverdose/data/analysis.html") %>%
+  html_nodes('table') %>%
+  html_table(header=1, fill=TRUE)  %>%
+  as.data.frame()
 
 ```
 
