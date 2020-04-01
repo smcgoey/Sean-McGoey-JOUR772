@@ -69,7 +69,13 @@ We're loading five packages today.
 
 # Load Tidyverse, janitor and arcos, tidycensus, rvest
 # Use install.packages if necessary
+#install.packages('rvest')
 
+library(tidyverse)
+library(tidycensus)
+library(janitor)
+library(arcos)
+library(rvest)
 
 ```
 
@@ -113,7 +119,11 @@ Write the necessary code to download it directly from that URL and bring it into
 
 ```{r}
 
+# store county URL
+county_url <- 'https://raw.githubusercontent.com/smussenden/spring20-data-journalism/master/labs/lab_05/data/county_pills_per_year.csv'
 
+# download information from csv URL
+average_county_pills_per_year <- read_csv(county_url)
 
 ```
 
@@ -131,6 +141,7 @@ First, we have to store an API key to access the ARCOS API tool.
 
 # store one of our API keys as an object called key
 key <- "uO4EK6I"
+
 ```
 
 Then, we can pull down tables using different functions.  For example, the summarized_county_annual() function allows us to pull down a table with one row per county per year (between 2006 and 2012) with total pills (dosage unit) in that county in that year.  
@@ -138,15 +149,19 @@ Then, we can pull down tables using different functions.  For example, the summa
 Here, we're storing it as an object called arcos_county_pills_per_year, and cleaning up the column names. 
 
 ```{r}
+
 arcos_county_pills_per_year <- summarized_county_annual(key = key) %>%
   clean_names()
+
 ```
 
 The ARCOS API also has a table with county population estimates for each year between 2006 and 2012.  Let's pull that down and clean and standardize the names. Remember to include the key.
 
 ```{r}
+
 arcos_county_population_per_year <- county_population(key = key) %>%
   clean_names()
+
 ```
 
 
@@ -159,6 +174,7 @@ Today, I'm going to show you how to get demographic and economic information tha
 First, we need to store our census API key, using the census_api_key() function from tidycensus. You can get your own API key [here](https://api.census.gov/data/key_signup.html) or use mine (below)
 
 ```{r}
+
 # Define your census API key
 census_api_key("549950d36c22ff16455fe196bbbd01d63cfbe6cf")
 
@@ -169,8 +185,10 @@ Now, let's pull down a table with the median household income for each county in
 First, run the code, then we'll examine what's happening. 
 
 ```{r}
+
 county_median_household_income <- get_acs(geography = "county", 
               variables="B19013_001", year=2012, geometry = FALSE )
+
 ```
 
 We get a table with 5 columns: 
