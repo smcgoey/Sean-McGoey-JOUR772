@@ -217,7 +217,9 @@ The census has thousands, and it can be a bit confusing.  The tidycensus has a f
 This function pulls all the avaiable variables for 2012 from the acs, with data from the previous 5 years averaged into a single estimate.  Here's a [good discussion of what that means](https://www.census.gov/data/developers/data-sets/acs-5year.html)
 
 ```{r}
-acs_variables <- load_variables(2012, "acs5")
+
+# Changed to load 2014 variables to ensure that the code I found in the 2012 version was the same -SNM
+acs_variables <- load_variables(2014, "acs5")
 
 ```
 
@@ -226,6 +228,9 @@ Let's examine this table together.  Be sure to watch the video where I'll review
 ***Task***: using a similar method as we used above to create a table of county by county median household income estimates, create a table with the total estimated population of people who identify as white only and no other race in each state in 2014. The name of the label you'll need is:  Estimate!!Total!!White alone. 
 
 ```{r}
+
+state_white_only_population <- get_acs(geography = "state", 
+              variables="B02001_002", year=2014, geometry = FALSE )
 
 ```
 
