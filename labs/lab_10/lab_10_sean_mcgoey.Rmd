@@ -68,7 +68,9 @@ Five of these we've loaded previously:
 ```{r}
 
 # Load Tidyverse, janitor and rvest
-
+library(tidyverse)
+library(janitor)
+library(rvest)
 
 ```
 
@@ -84,7 +86,8 @@ opioid_scrape <- read_html("https://www.drugabuse.gov/drugs-abuse/opioids/opioid
   as.data.frame() %>%
   as_data_frame()
 
-opioid_scrape 
+opioid_scrape
+
 ```
 
 For now, let's look at the table.  It's pretty messy:
@@ -104,10 +107,12 @@ If we make a mistake, we can just tweak the function and reload the data.
 Let's start by cleaning up those funky column names, using clean_names() from the janitor package.
 
 ```{r}
+
 opioid_scrape_working <- opioid_scrape %>%
   clean_names()
   
 opioid_scrape_working 
+
 ```
 
 Take a look at the data.  Those column names are a bit more managable. 
@@ -115,6 +120,7 @@ Take a look at the data.  Those column names are a bit more managable.
 Now let's use another janitor function, remove_empty_rows(), to get rid of that row of NAs in the middle. 
 
 ```{r}
+
 opioid_scrape_working <- opioid_scrape %>%
   clean_names() %>%
   remove_empty_rows()
@@ -129,6 +135,7 @@ Now let's get rid of row 36, the one that says only "*Not included - Did not mee
 There's another way we could do it, by directly targeting the row number.  This is almost always true when it comes to any data cleaning task: there's almost ALWAYS another way to do something. 
 
 ```{r}
+
 opioid_scrape_working <- opioid_scrape %>%
   clean_names() %>%
   remove_empty_rows() %>%
@@ -142,7 +149,8 @@ opioid_scrape_working
 
 What about all those asterisks in the opioid death rate for about half of the states.  Those are missing values -- N/As -- but they're not stored as proper N/As, in a format R can recognize.  If we leave them, it will make it hard to do calculations to that column. 
 
-The tidyverse has a nice function called na_if() which allows us to convert values that match a certain pattern to a real N/A.  
+The tidyverse has a nice function called na_if() which allows us to convert values that match a certain pattern to a real N/A.
+
 ```{r}
 
 opioid_scrape_working <- opioid_scrape %>%
@@ -152,8 +160,7 @@ opioid_scrape_working <- opioid_scrape %>%
   mutate(opioid_involved_overdose_deaths_100_000_persons1_2017 = na_if(opioid_involved_overdose_deaths_100_000_persons1_2017, "*"))
 
 opioid_scrape_working 
-  
-  
+
 ```
 
 Those column names are pretty unwieldy.  Let's use the rename function to make them a little easier to understand: death_rate and rx_rate
@@ -195,7 +202,6 @@ Aha! Here's what went wrong.  We were trying to do math on a column that looked 
 
 ```{r}
 
-
 opioid_scrape_working <- opioid_scrape %>%
   clean_names() %>%
   remove_empty_rows() %>%
@@ -213,7 +219,9 @@ opioid_scrape_working
 Let's examine the column types again with the glimpse function.
 
 ```{r}
+
 glimpse(opioid_scrape_working)
+
 ```
 
 Now they're double format (dbl). that's a kind of number. When we do math, it works.
@@ -234,9 +242,11 @@ The beauty of cleaning data inside an R script file is that when you discover a 
 Let's now read in a data set we used in last week's lab 9, with opioid death rates by county. 
 
 ```{r}
+
 opioid_deaths_county <- read_tsv("data/2006-2012.txt")
 
 opioid_deaths_county
+
 ```
 
 It has a lot of issues, including:
@@ -249,6 +259,7 @@ It has a lot of issues, including:
 We just learned how to fix all of those above.  Go ahead and run the code below to fix those problems.  
 
 ```{r}
+
 opioid_deaths_county <- read_tsv("data/2006-2012.txt") %>%
   clean_names() %>%
   filter(!str_detect(age_adjusted_rate, "Unreliable|Suppressed|Missing")) %>%
@@ -258,6 +269,7 @@ opioid_deaths_county <- read_tsv("data/2006-2012.txt") %>%
   filter(!is.na(county))
 
 opioid_deaths_county
+
 ```
 
 But, there's still a lot we can do with this sheet to make it easier to analyze later. 
@@ -277,27 +289,32 @@ opioid_deaths_county_working
 That worked pretty well, but when we split it, it added some extra whitespace at the front of the column.  That could affect our ability to do joins later, so let's fix it with the str_trim function from the stringr package. 
 
 ```{r}
+
 opioid_deaths_county_working <- opioid_deaths_county %>%
   separate(county, into=c("county","state"), sep=",") %>%
   mutate(state = str_trim(state))
   
 opioid_deaths_county_working
+
 ```
 
 And if we want to convert the county names to all lowercase values -- something we might need to do to allow us to join it to another table with only lowercase values -- we can use the tolower() function.
 
 ```{r}
+
 opioid_deaths_county_working <- opioid_deaths_county %>%
   separate(county, into=c("county","state"), sep=",") %>%
   mutate(state = str_trim(state)) %>%
   mutate(county = tolower(county))
 
 opioid_deaths_county_working
+
 ```
 
 And, let's suppose to be able to join it to another table, we needed to remove the words "county" from the county column, leaving us with only the names of the counties.  In Louisiana they call counties a parish, so we need to strip that out too.  Same with borough, a word often used in Alaska.  
 
 ```{r}
+
 opioid_deaths_county_working <- opioid_deaths_county %>%
   separate(county, into=c("county","state"), sep=",") %>%
   mutate(state = str_trim(state)) %>%
@@ -306,6 +323,7 @@ opioid_deaths_county_working <- opioid_deaths_county %>%
   mutate(county = str_trim(county))
 
 opioid_deaths_county_working
+
 ```
 
 And, let's suppose it would be useful to extract the state code from the five digit fips code (Two digit state plus three digit county).
@@ -313,6 +331,7 @@ And, let's suppose it would be useful to extract the state code from the five di
 We can use the str_sub function to strip out the first two characters. 
 
 ```{r}
+
 opioid_deaths_county_working <- opioid_deaths_county %>%
   separate(county, into=c("county","state"), sep=",") %>%
   mutate(state = str_trim(state)) %>%
@@ -322,6 +341,7 @@ opioid_deaths_county_working <- opioid_deaths_county %>%
   select(state_code, everything())
 
 opioid_deaths_county_working
+
 ```
 
 ## Your task
@@ -333,9 +353,11 @@ This is is a dataframe of the rate of opioids prescribed to Medicare recipients 
 It was pulled from [here](https://www.cms.gov/Research-Statistics-Data-and-Systems/Statistics-Trends-and-Reports/Medicare-Provider-Charge-Data/OpioidMap_Medicare_PartD)
 
 ```{r}
+
 medicare_opioids <- read_csv("data/medicare_opioids_dirty.csv")
 
 medicare_opioids
+
 ```
 
 It has several problems: 
@@ -360,14 +382,28 @@ When you finish, your dataframe should look like this:
 medicare_opioids_clean <- read_csv("data/medicare_opioids_clean.csv")
 
 medicare_opioids_clean
+
 ```
 
 Write your code to clean up medicare_opioids here.
 
 ```{r}
 
+medicare_opioids <- read_csv("data/medicare_opioids_dirty.csv") %>%
+  clean_names() %>%
+  remove_empty_rows() %>%
+  mutate(medicare_opioid_prescribing_rate = na_if(medicare_opioid_prescribing_rate, "*")) %>%
+  mutate(medicare_urban_opioid_prescribing_rate = na_if(medicare_urban_opioid_prescribing_rate, "*")) %>%
+  mutate(medicare_rural_opioid_prescribing_rate = na_if(medicare_rural_opioid_prescribing_rate, "*")) %>%
+  separate(county, into=c("county","state"), sep=",") %>%
+  mutate(state = tolower(state)) %>%
+  mutate(county = tolower(county)) %>%
+  mutate(county = str_remove(county, "county|parish|borough")) %>%
+  mutate(county = str_trim(county)) %>%
+  mutate(state_code = str_sub(fips, start=1L, end=2L))
+  #select(everything(), state_code)
 
-
+medicare_opioids
 
 ```
 
