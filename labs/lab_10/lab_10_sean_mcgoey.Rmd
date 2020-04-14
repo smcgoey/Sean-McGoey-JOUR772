@@ -392,6 +392,9 @@ Write your code to clean up medicare_opioids here.
 medicare_opioids <- read_csv("data/medicare_opioids_dirty.csv") %>%
   clean_names() %>%
   remove_empty_rows() %>%
+  mutate(medicare_opioid_prescribing_rate = as.numeric(medicare_opioid_prescribing_rate),
+         medicare_urban_opioid_prescribing_rate = as.numeric(medicare_urban_opioid_prescribing_rate),
+         medicare_rural_opioid_prescribing_rate = as.numeric(medicare_rural_opioid_prescribing_rate)) %>%
   mutate(medicare_opioid_prescribing_rate = na_if(medicare_opioid_prescribing_rate, "*")) %>%
   mutate(medicare_urban_opioid_prescribing_rate = na_if(medicare_urban_opioid_prescribing_rate, "*")) %>%
   mutate(medicare_rural_opioid_prescribing_rate = na_if(medicare_rural_opioid_prescribing_rate, "*")) %>%
@@ -400,14 +403,12 @@ medicare_opioids <- read_csv("data/medicare_opioids_dirty.csv") %>%
   mutate(county = tolower(county)) %>%
   mutate(county = str_remove(county, "county|parish|borough")) %>%
   mutate(county = str_trim(county)) %>%
-  mutate(state_code = str_sub(fips, start=1L, end=2L))
-  #select(everything(), state_code)
+  mutate(state_code = as.numeric(str_sub(fips, start=1L, end=2L))) %>%
+  filter(!str_detect(county, "statewide"))
 
 medicare_opioids
 
 ```
-
-
 
 ## Submission
 
